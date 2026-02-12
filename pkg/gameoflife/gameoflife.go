@@ -15,7 +15,8 @@ type Game struct {
 	Width  int
 	Height int
 
-	highLife bool
+	highLife    bool
+	randomRaise *float64
 
 	Cells [][]bool
 
@@ -25,7 +26,7 @@ type Game struct {
 	rng *rand.Rand
 }
 
-func NewGame(width, height int, density float64, highLife bool, seed *int64) *Game {
+func NewGame(width, height int, density float64, highLife bool, seed *int64, randomraise *float64) *Game {
 	realSeed := time.Now().UnixMicro()
 	if seed != nil {
 		realSeed = *seed
@@ -34,11 +35,12 @@ func NewGame(width, height int, density float64, highLife bool, seed *int64) *Ga
 	rng := rand.New(source)
 
 	g := &Game{
-		paused:   false,
-		Width:    width,
-		Height:   height,
-		highLife: highLife,
-		rng:      rng,
+		paused:      false,
+		Width:       width,
+		Height:      height,
+		highLife:    highLife,
+		randomRaise: randomraise,
+		rng:         rng,
 
 		doubleBuffer: make([]byte, width*height*4),
 		pixels:       make([]byte, width*height*4),
@@ -143,6 +145,10 @@ func (g *Game) updateCells(state []bool) []bool {
 				newState[currentIdx] = true
 			} else if g.highLife && !alive && neighbors == 6 {
 				newState[currentIdx] = true
+			} else if g.randomRaise != nil {
+				if g.rng.Float64() <= *g.randomRaise {
+					newState[currentIdx] = true
+				}
 			} else {
 				newState[currentIdx] = false
 			}
@@ -178,15 +184,15 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 	return g.Width, g.Height
 }
 
-func Show(width, height, scale int, density float64, highLife bool, seed *int64) {
+func Show(width, height, scale int, density float64, highLife bool, seed *int64, tps int, randomraise *float64) {
 	ebiten.SetWindowSize(width*scale, height*scale)
 	ebiten.SetWindowTitle("Game of Life - Go Visualization")
 
 	// Set TPS (Ticks Per Second) to control simulation speed
 	// 10 ticks per second is easier to watch than the default 60
-	ebiten.SetTPS(10)
+	ebiten.SetTPS(tps)
 
-	if err := ebiten.RunGame(NewGame(width, height, density, highLife, seed)); err != nil {
+	if err := ebiten.RunGame(NewGame(width, height, density, highLife, seed, randomraise)); err != nil {
 		log.Fatal().Err(err)
 	}
 }
