@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/alecthomas/kong"
-	"github.com/rs/zerolog/log"
 
 	gocli "github.com/gentoomaniac/game-of-life/pkg/cli"
 	"github.com/gentoomaniac/game-of-life/pkg/gameoflife"
@@ -20,8 +19,12 @@ var (
 var cli struct {
 	logging.LoggingConfig
 
-	Foo struct{} `cmd:"" help:"FooBar command"`
-	Run struct{} `cmd:"" help:"Run the application (default)." default:"1" hidden:""`
+	Width    int     `help:"World width" default:"320"`
+	Height   int     `help:"World height" default:"240"`
+	Scale    int     `help:"Graphic scale of the world" default:"4"`
+	Density  float64 `help:"initial amount of lifeforms" default:"0.25"`
+	HighLife bool    `help:"enable the HighLife rule, born with 3 or 6" default:"false"`
+	Seed     *int64  `help:"seed for randomnes"`
 
 	Version gocli.VersionFlag `short:"V" help:"Display version."`
 }
@@ -36,11 +39,6 @@ func main() {
 	})
 	logging.Setup(&cli.LoggingConfig)
 
-	switch ctx.Command() {
-	case "foo":
-		log.Info().Msg("foo command")
-	default:
-		gameoflife.Show(320, 240, 2)
-	}
+	gameoflife.Show(cli.Width, cli.Height, cli.Scale, cli.Density, cli.HighLife, cli.Seed)
 	ctx.Exit(0)
 }

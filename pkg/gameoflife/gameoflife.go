@@ -2,6 +2,7 @@ package gameoflife
 
 import (
 	"math/rand"
+	"time"
 
 	log "github.com/rs/zerolog/log"
 
@@ -9,19 +10,35 @@ import (
 )
 
 type Game struct {
-	Pause        bool
-	Width        int
-	Height       int
-	Cells        [][]bool
+	Pause  bool
+	Width  int
+	Height int
+
+	highLife bool
+
+	Cells [][]bool
+
 	pixels       []byte
 	doubleBuffer []byte
+
+	rng *rand.Rand
 }
 
-func NewGame(width, height int) *Game {
+func NewGame(width, height int, density float64, highLife bool, seed *int64) *Game {
+	realSeed := time.Now().UnixMicro()
+	if seed != nil {
+		realSeed = *seed
+	}
+	source := rand.NewSource(realSeed)
+	rng := rand.New(source)
+
 	g := &Game{
-		Pause:        false,
-		Width:        width,
-		Height:       height,
+		Pause:    false,
+		Width:    width,
+		Height:   height,
+		highLife: highLife,
+		rng:      rng,
+
 		doubleBuffer: make([]byte, width*height*4),
 		pixels:       make([]byte, width*height*4),
 	}
@@ -29,7 +46,7 @@ func NewGame(width, height int) *Game {
 	// initial randomness
 	cells := make([]bool, width*height)
 	for i := 0; i < len(cells); i++ {
-		if rand.Intn(2) == 1 {
+		if rng.Float64() <= density {
 			cells[i] = true
 		}
 	}
@@ -83,6 +100,8 @@ func (g *Game) updateCells(state []bool) []bool {
 				newState[currentIdx] = true
 			} else if !alive && neighbors == 3 {
 				newState[currentIdx] = true
+			} else if g.highLife && !alive && neighbors == 6 {
+				newState[currentIdx] = true
 			} else {
 				newState[currentIdx] = false
 			}
@@ -123,7 +142,7 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 	return g.Width, g.Height
 }
 
-func Show(width, height, scale int) {
+func Show(width, height, scale int, density float64, highLife bool, seed *int64) {
 	ebiten.SetWindowSize(width*scale, height*scale)
 	ebiten.SetWindowTitle("Game of Life - Go Visualization")
 
@@ -131,7 +150,7 @@ func Show(width, height, scale int) {
 	// 10 ticks per second is easier to watch than the default 60
 	ebiten.SetTPS(10)
 
-	if err := ebiten.RunGame(NewGame(width, height)); err != nil {
+	if err := ebiten.RunGame(NewGame(width, height, density, highLife, seed)); err != nil {
 		log.Fatal().Err(err)
 	}
 }
