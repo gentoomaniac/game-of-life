@@ -57,6 +57,8 @@ func NewGame(width, height int, density float64, highLife bool, seed *int64) *Ga
 
 // Update handles the logic (Game of Life rules go here)
 func (g *Game) Update() error {
+	g.handleMouse()
+
 	if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
 		g.paused = !g.paused
 	}
@@ -66,6 +68,48 @@ func (g *Game) Update() error {
 	}
 
 	return nil
+}
+
+func (g *Game) handleMouse() {
+	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+		x, y := ebiten.CursorPosition()
+
+		if x >= 0 && x < g.Width && y >= 0 && y < g.Height {
+			// 3. Calculate 1D Index
+			idx := y*g.Width + x
+
+			g.Cells[len(g.Cells)-1][idx] = true
+
+			// 5. Update Visuals Instantly
+			// We update the pixel buffer directly so we don't have to wait
+			// for the next Render() cycle to see the change.
+			pIdx := idx * 4
+			g.doubleBuffer[pIdx] = 0xff   // R
+			g.doubleBuffer[pIdx+1] = 0xff // G
+			g.doubleBuffer[pIdx+2] = 0xff // B
+			g.doubleBuffer[pIdx+3] = 0xff // A
+		}
+
+		copy(g.pixels, g.doubleBuffer)
+	}
+
+	// Right click to erase
+	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonRight) {
+		x, y := ebiten.CursorPosition()
+
+		if x >= 0 && x < g.Width && y >= 0 && y < g.Height {
+			idx := y*g.Width + x
+			g.Cells[len(g.Cells)-1][idx] = false
+
+			// Update Visuals (Black)
+			pIdx := idx * 4
+			g.doubleBuffer[pIdx] = 0
+			g.doubleBuffer[pIdx+1] = 0
+			g.doubleBuffer[pIdx+2] = 0
+			g.doubleBuffer[pIdx+3] = 0xff
+		}
+		copy(g.pixels, g.doubleBuffer)
+	}
 }
 
 func (g *Game) updateCells(state []bool) []bool {
