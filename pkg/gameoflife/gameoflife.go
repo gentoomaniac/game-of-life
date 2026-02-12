@@ -55,7 +55,6 @@ func NewGame(width, height int, density float64, highLife bool, seed *int64) *Ga
 	return g
 }
 
-// Update handles the logic (Game of Life rules go here)
 func (g *Game) Update() error {
 	g.handleMouse()
 
@@ -71,18 +70,14 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) handleMouse() {
+	// Left klick to make alive
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		x, y := ebiten.CursorPosition()
 
 		if x >= 0 && x < g.Width && y >= 0 && y < g.Height {
-			// 3. Calculate 1D Index
 			idx := y*g.Width + x
-
 			g.Cells[len(g.Cells)-1][idx] = true
 
-			// 5. Update Visuals Instantly
-			// We update the pixel buffer directly so we don't have to wait
-			// for the next Render() cycle to see the change.
 			pIdx := idx * 4
 			g.doubleBuffer[pIdx] = 0xff   // R
 			g.doubleBuffer[pIdx+1] = 0xff // G
@@ -93,7 +88,7 @@ func (g *Game) handleMouse() {
 		copy(g.pixels, g.doubleBuffer)
 	}
 
-	// Right click to erase
+	// Right click to kill
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonRight) {
 		x, y := ebiten.CursorPosition()
 
@@ -101,7 +96,6 @@ func (g *Game) handleMouse() {
 			idx := y*g.Width + x
 			g.Cells[len(g.Cells)-1][idx] = false
 
-			// Update Visuals (Black)
 			pIdx := idx * 4
 			g.doubleBuffer[pIdx] = 0
 			g.doubleBuffer[pIdx+1] = 0
@@ -117,7 +111,6 @@ func (g *Game) updateCells(state []bool) []bool {
 
 	for y := 0; y < g.Height; y++ {
 		for x := 0; x < g.Width; x++ {
-			// Count alive neighbors
 			neighbors := 0
 
 			// Check all 8 surrounding cells
@@ -140,7 +133,6 @@ func (g *Game) updateCells(state []bool) []bool {
 				}
 			}
 
-			// Calculate current cell index
 			currentIdx := y*g.Width + x
 			alive := state[currentIdx]
 
@@ -155,20 +147,15 @@ func (g *Game) updateCells(state []bool) []bool {
 				newState[currentIdx] = false
 			}
 
-			// update the pixel buffer here as well since this
-			// only has to be done when something actually changes
-			// and not on every draw
-			// To avoid partial updates we use a double buffer and update
-			// the real buffer in Draw()
 			pIdx := currentIdx * 4
 			if newState[currentIdx] {
-				// White
+				// Alive
 				g.doubleBuffer[pIdx] = 0xff
 				g.doubleBuffer[pIdx+1] = 0xff
 				g.doubleBuffer[pIdx+2] = 0xff
 				g.doubleBuffer[pIdx+3] = 0xff
 			} else {
-				// Black
+				// Dead
 				g.doubleBuffer[pIdx] = 0
 				g.doubleBuffer[pIdx+1] = 0
 				g.doubleBuffer[pIdx+2] = 0
