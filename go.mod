@@ -3,7 +3,7 @@ module github.com/gentoomaniac/game-of-life
 go 1.25
 
 require (
-	github.com/alecthomas/kong v1.10.0
+	github.com/alecthomas/kong v1.14.0
 	github.com/hajimehoshi/ebiten/v2 v2.9.8
 	github.com/rs/zerolog v1.34.0
 )
