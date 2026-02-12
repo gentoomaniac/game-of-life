@@ -7,10 +7,11 @@ import (
 	log "github.com/rs/zerolog/log"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 type Game struct {
-	Pause  bool
+	paused bool
 	Width  int
 	Height int
 
@@ -33,7 +34,7 @@ func NewGame(width, height int, density float64, highLife bool, seed *int64) *Ga
 	rng := rand.New(source)
 
 	g := &Game{
-		Pause:    false,
+		paused:   false,
 		Width:    width,
 		Height:   height,
 		highLife: highLife,
@@ -56,7 +57,11 @@ func NewGame(width, height int, density float64, highLife bool, seed *int64) *Ga
 
 // Update handles the logic (Game of Life rules go here)
 func (g *Game) Update() error {
-	if !g.Pause {
+	if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
+		g.paused = !g.paused
+	}
+
+	if !g.paused || (g.paused && inpututil.IsKeyJustPressed(ebiten.KeyN)) {
 		g.Cells = append(g.Cells, g.updateCells(g.Cells[len(g.Cells)-1]))
 	}
 
