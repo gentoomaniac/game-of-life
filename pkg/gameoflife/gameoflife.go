@@ -18,6 +18,7 @@ type Game struct {
 	highLife    bool
 	randomRaise *float64
 
+	tick  int64
 	Cells [][]bool
 
 	pixels       []byte
@@ -58,6 +59,10 @@ func NewGame(width, height int, density float64, highLife bool, seed *int64, ran
 }
 
 func (g *Game) Update() error {
+	if inpututil.IsKeyJustPressed(ebiten.KeyQ) {
+		return ebiten.Termination
+	}
+
 	g.handleMouse()
 
 	if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
@@ -65,7 +70,18 @@ func (g *Game) Update() error {
 	}
 
 	if !g.paused || (g.paused && inpututil.IsKeyJustPressed(ebiten.KeyN)) {
-		g.Cells = append(g.Cells, g.updateCells(g.Cells[len(g.Cells)-1]))
+		if int(g.tick) == len(g.Cells)-1 {
+			g.Cells = append(g.Cells, g.updateCells(g.Cells[g.tick]))
+		}
+		g.tick++
+		g.drawState(g.Cells[g.tick])
+	}
+
+	if g.paused && inpututil.IsKeyJustPressed(ebiten.KeyP) {
+		if g.tick > 0 {
+			g.tick--
+			g.drawState(g.Cells[g.tick])
+		}
 	}
 
 	return nil
@@ -106,6 +122,26 @@ func (g *Game) handleMouse() {
 		}
 		copy(g.pixels, g.doubleBuffer)
 	}
+}
+
+func (g *Game) drawState(state []bool) {
+	for currentIdx := range state {
+		pIdx := currentIdx * 4
+		if state[currentIdx] {
+			// Alive
+			g.doubleBuffer[pIdx] = 0xff
+			g.doubleBuffer[pIdx+1] = 0xff
+			g.doubleBuffer[pIdx+2] = 0xff
+			g.doubleBuffer[pIdx+3] = 0xff
+		} else {
+			// Dead
+			g.doubleBuffer[pIdx] = 0
+			g.doubleBuffer[pIdx+1] = 0
+			g.doubleBuffer[pIdx+2] = 0
+			g.doubleBuffer[pIdx+3] = 0xff
+		}
+	}
+	copy(g.pixels, g.doubleBuffer)
 }
 
 func (g *Game) updateCells(state []bool) []bool {
@@ -151,21 +187,6 @@ func (g *Game) updateCells(state []bool) []bool {
 				}
 			} else {
 				newState[currentIdx] = false
-			}
-
-			pIdx := currentIdx * 4
-			if newState[currentIdx] {
-				// Alive
-				g.doubleBuffer[pIdx] = 0xff
-				g.doubleBuffer[pIdx+1] = 0xff
-				g.doubleBuffer[pIdx+2] = 0xff
-				g.doubleBuffer[pIdx+3] = 0xff
-			} else {
-				// Dead
-				g.doubleBuffer[pIdx] = 0
-				g.doubleBuffer[pIdx+1] = 0
-				g.doubleBuffer[pIdx+2] = 0
-				g.doubleBuffer[pIdx+3] = 0xff
 			}
 		}
 	}
